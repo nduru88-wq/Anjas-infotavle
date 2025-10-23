@@ -129,7 +129,8 @@
       <!-- Øverste højre: Slideshow (6 sekunder pr. slide) -->
       <div class="top-right">
         <iframe
-          src="https://docs.google.com/presentation/d/e/2PACX-1vRCY3uWt4hne64nwShk3F8ZBMQjzmdFFM4NmGIDnw5UZM48zUbHTk-j1YBLlDJ0hGXhRtNOFd3bBrjg/pubembed?start=true&loop=true&delayms=6000"
+          id="slides-top"
+          data-src="https://docs.google.com/presentation/d/e/2PACX-1vRCY3uWt4hne64nwShk3F8ZBMQjzmdFFM4NmGIDnw5UZM48zUbHTk-j1YBLlDJ0hGXhRtNOFd3bBrjg/pubembed?start=true&loop=true&delayms=6000"
           allowfullscreen
           mozallowfullscreen
           webkitallowfullscreen>
@@ -140,7 +141,8 @@
     <!-- Nederste: Slideshow (banner – 4 sekunder pr. slide) -->
     <div class="bottom">
       <iframe
-        src="https://docs.google.com/presentation/d/e/2PACX-1vQdMiiARYBenrAlMwBvNBx_gs47h5SaM3wXgkWEh_tY-fVZrCH2pgSSwN4iLKrbr1H6af2b0rZIPv-E/pubembed?start=true&loop=true&delayms=4000"
+        id="slides-bottom"
+        data-src="https://docs.google.com/presentation/d/e/2PACX-1vQdMiiARYBenrAlMwBvNBx_gs47h5SaM3wXgkWEh_tY-fVZrCH2pgSSwN4iLKrbr1H6af2b0rZIPv-E/pubembed?start=true&loop=true&delayms=4000"
         allowfullscreen
         mozallowfullscreen
         webkitallowfullscreen>
@@ -149,54 +151,60 @@
   </div>
 
   <script>
-    // Formattere til dansk lokalitet (browserens tidszone bruges – DK giver CET/CEST)
+    /* ---------- Ur ---------- */
     const timeEl = document.getElementById('time');
     const dateEl = document.getElementById('date');
     const daypartEl = document.getElementById('daypart');
 
-    const timeFmt = new Intl.DateTimeFormat('da-DK', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-
     const dateFmt = new Intl.DateTimeFormat('da-DK', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
     });
 
     function getDaypart(h) {
-      // Justér tidsrum efter smag
       if (h >= 5 && h < 12) return 'Morgen';
       if (h >= 12 && h < 14) return 'Middag';
       if (h >= 14 && h < 23) return 'Aften';
       return 'Nat';
     }
-
-    function pad2(n) { return String(n).padStart(2, '0'); }
+    const pad2 = n => String(n).padStart(2, '0');
+    const capFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
 
     function tick() {
       const now = new Date();
-      // Brug egen formattering for at kunne blinke kolon konsekvent
       const hh = pad2(now.getHours());
       const mm = pad2(now.getMinutes());
-
-      // Indsæt blinkende kolon som separat span
       timeEl.innerHTML = `${hh}<span class="blink">:</span>${mm}`;
-      dateEl.textContent = capitalizeFirst(dateFmt.format(now));
+      dateEl.textContent = capFirst(dateFmt.format(now));
       daypartEl.textContent = getDaypart(now.getHours());
     }
-
-    // Lille hjælper til at få stort forbogstav i ugedag/måned
-    function capitalizeFirst(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1);
-    }
-
-    // Start uret
     tick();
     setInterval(tick, 1000);
+
+    /* ---------- Auto-opdater iframes (hver 60 sek.) ---------- */
+    const REFRESH_MS = 60_000; // 1 minut
+    const frames = [
+      document.getElementById('slides-top'),
+      document.getElementById('slides-bottom')
+    ];
+
+    // Funktion der (gen)sætter src med cache-buster
+    function refreshFrame(el) {
+      const base = el.getAttribute('data-src');
+      const sep = base.includes('?') ? '&' : '?';
+      // cache-buster gør at browseren henter friskt indhold
+      el.src = `${base}${sep}cb=${Date.now()}`;
+    }
+
+    // Initial indlæsning
+    frames.forEach(refreshFrame);
+
+    // Løbende opdatering
+    setInterval(() => {
+      frames.forEach(refreshFrame);
+    }, REFRESH_MS);
+
+    // Valgfrit: skån opstart ved at forsinke første refresh lidt (udkommenteret)
+    // setTimeout(() => frames.forEach(refreshFrame), 10_000);
   </script>
 </body>
 </html>
